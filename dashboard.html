@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resume Builder Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1200px;
+      margin: 2rem auto;
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+    }
+
+    form label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .preview-container {
+      margin-top: 3rem;
+    }
+
+    .section {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      border-left: 4px solid #007bff;
+      background-color: #fafafa;
+    }
+
+    .section h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .template-select {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .template-select label {
+      flex: 1 0 21%;
+      background-color: #f0f0f0;
+      padding: 0.75rem;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .template-select input[type="radio"] {
+      display: none;
+    }
+
+    .template-select input[type="radio"]:checked + label {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 4rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Resume Dashboard</h1>
+    <p style="text-align: center;">Build your resume and export as PDF. Choose from 20 templates.</p>
+
+    <form id="resume-form">
+      <label for="fullName">Full Name</label>
+      <input type="text" name="fullName" id="fullName" placeholder="John Doe" required />
+
+      <label for="email">Email</label>
+      <input type="email" name="email" id="email" placeholder="john@example.com" required />
+
+      <label for="phone">Phone</label>
+      <input type="text" name="phone" id="phone" placeholder="+1234567890" required />
+
+      <label for="address">Address</label>
+      <input type="text" name="address" id="address" placeholder="123 Main St, City, Country" />
+
+      <label for="summary">Summary</label>
+      <textarea name="summary" id="summary" rows="4" placeholder="Brief summary about yourself..."></textarea>
+
+      <label for="experience">Experience</label>
+      <textarea name="experience" id="experience" rows="5" placeholder="List your previous roles, responsibilities..."></textarea>
+
+      <label for="education">Education</label>
+      <textarea name="education" id="education" rows="4" placeholder="Degrees, universities, years..."></textarea>
+
+      <label for="skills">Skills</label>
+      <input type="text" name="skills" id="skills" placeholder="HTML, CSS, JavaScript, React..." />
+
+      <label for="projects">Projects & Awards</label>
+      <textarea name="projects" id="projects" rows="3" placeholder="Projects, honors, recognitions..."></textarea>
+
+      <button type="button" id="generate-pdf">Download Resume</button>
+    </form>
+
+    <div class="preview-container">
+      <h2>Live Preview</h2>
+      <div class="section"><h3>Name:</h3> <div id="preview-name"></div></div>
+      <div class="section"><h3>Email:</h3> <div id="preview-email"></div></div>
+      <div class="section"><h3>Phone:</h3> <div id="preview-phone"></div></div>
+      <div class="section"><h3>Address:</h3> <div id="preview-address"></div></div>
+      <div class="section"><h3>Summary:</h3> <div id="preview-summary"></div></div>
+      <div class="section"><h3>Experience:</h3> <div id="preview-experience"></div></div>
+      <div class="section"><h3>Education:</h3> <div id="preview-education"></div></div>
+      <div class="section"><h3>Skills:</h3> <div id="preview-skills"></div></div>
+      <div class="section"><h3>Projects & Awards:</h3> <div id="preview-projects"></div></div>
+    </div>
+<script>
+  const form = document.getElementById("resume-form");
+  const preview = {
+    name: document.getElementById("preview-name"),
+    email: document.getElementById("preview-email"),
+    phone: document.getElementById("preview-phone"),
+    address: document.getElementById("preview-address"),
+    summary: document.getElementById("preview-summary"),
+    experience: document.getElementById("preview-experience"),
+    education: document.getElementById("preview-education"),
+    skills: document.getElementById("preview-skills"),
+    projects: document.getElementById("preview-projects"),
+  };
+
+  // Update preview with form data
+  function updatePreview() {
+    const data = new FormData(form);
+    preview.name.textContent = data.get("fullName") || "";
+    preview.email.textContent = data.get("email") || "";
+    preview.phone.textContent = data.get("phone") || "";
+    preview.address.textContent = data.get("address") || "";
+    preview.summary.textContent = data.get("summary") || "";
+    preview.experience.textContent = data.get("experience") || "";
+    preview.education.textContent = data.get("education") || "";
+    preview.skills.textContent = data.get("skills") || "";
+    preview.projects.textContent = data.get("projects") || "";
+  }
+
+  form.addEventListener("input", updatePreview);
+  window.addEventListener("load", updatePreview);
+
+  // PDF Generation Logic
+  document.getElementById("generate-pdf").addEventListener("click", () => {
+    const data = new FormData(form);
+    const selectedTemplate = data.get("template");
+    generatePDF(data, selectedTemplate);
+  });
+
+  function generatePDF(data, templateId) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const margin = 15;
+    let y = margin;
+
+    // Common header for all templates
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(data.get("fullName") || "Your Name", margin, y);
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text(`Email: ${data.get("email") || ""}`, margin, y);
+    y += 6;
+    doc.text(`Phone: ${data.get("phone") || ""}`, margin, y);
+    y += 6;
+    doc.text(`Address: ${data.get("address") || ""}`, margin, y);
+    y += 12;
+
+    // Section rendering helpers
+    function addSection(title, content) {
+      if (!content) return;
+      doc.setTextColor(40);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, margin, y);
+      y += 8;
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(33);
+      const lines = doc.splitTextToSize(content, 180);
+      doc.text(lines, margin, y);
+      y += lines.length * 6 + 8;
+
+      if (y > 280) {
+        doc.addPage();
+        y = margin;
+      }
+    }
+
+
+      case "2":
+        // Template 2 could have different layout/colors
+        doc.setDrawColor(0, 112, 192);
+        doc.setFillColor(0, 112, 192);
+        doc.rect(0, 0, 210, 20, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.text(data.get("fullName") || "Your Name", margin, 15);
+        y = 30;
+        addSection("Summary", data.get("summary"));
+        addSection("Experience", data.get("experience"));
+        addSection("Education", data.get("education"));
+        addSection("Skills", data.get("skills"));
+        addSection("Projects", data.get("projects"));
+        break;
+
+      // ... similarly implement all 20 templates (dummy for now)
+      default:
+        addSection("Summary", data.get("summary"));
+        addSection("Experience", data.get("experience"));
+        addSection("Education", data.get("education"));
+        addSection("Skills", data.get("skills"));
+        addSection("Projects", data.get("projects"));
+    }
+
+    doc.save(`Resume_Template_${templateId}.pdf`);
+  }
+</script>
+</div> <!-- close container -->
+<footer>© 2025 Resume Builder Dashboard. All rights reserved.</footer>
+</body>
+</html>
+<style>
+  /* Template container styles */
+  .template-preview {
+    display: none;
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin-top: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  .template-preview.active {
+    display: block;
+  }
+
+  /* Template 1 - Classic Blue */
+  .template-1 h1 {
+    color: #007bff;
+    font-weight: 700;
+  }
+  .template-1 .section-title {
+    border-bottom: 2px solid #007bff;
+    margin-bottom: 10px;
+    padding-bottom: 3px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0056b3;
+  }
+
+  /* Template 2 - Elegant Gray */
+  .template-2 h1 {
+    color: #444;
+    font-weight: 700;
+    font-family: Georgia, serif;
+  }
+  .template-2 .section-title {
+    border-bottom: 1px solid #aaa;
+    margin-bottom: 12px;
+    font-style: italic;
+    color: #555;
+  }
+
+  /* Template 3 - Modern Dark */
+  .template-3 {
+    background-color: #222;
+    color: #eee;
+    padding: 25px;
+  }
+  .template-3 h1, .template-3 .section-title {
+    color: #1db954;
+  }
+
+  /* Template 4 - Green Minimal */
+  .template-4 h1 {
+    color: #28a745;
+  }
+  .template-4 .section-title {
+    color: #1e7e34;
+    font-weight: bold;
+  }
+
+  /* Template 5 - Red Bold */
+  .template-5 h1 {
+    color: #dc3545;
+  }
+  .template-5 .section-title {
+    color: #a71d2a;
+    font-weight: 600;
+  }
+
+  /* Add similar unique styles for templates 6 to 20 */
+  /* ... */
+</style>
+
+<!-- Template previews -->
+<div id="template-previews">
+
+  <template id="template1">
+    <div class="template-preview template-1">
+      <h1 id="t1-name">Full Name</h1>
+      <p><strong>Email:</strong> <span id="t1-email"></span></p>
+      <p><strong>Phone:</strong> <span id="t1-phone"></span></p>
+      <p><strong>Address:</strong> <span id="t1-address"></span></p>
+      <div>
+        <h2 class="section-title">Summary</h2>
+        <p id="t1-summary"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Experience</h2>
+        <p id="t1-experience"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Education</h2>
+        <p id="t1-education"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Skills</h2>
+        <p id="t1-skills"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Projects & Awards</h2>
+        <p id="t1-projects"></p>
+      </div>
+    </div>
+  </template>
+
+  <template id="template2">
+    <div class="template-preview template-2">
+      <h1 id="t2-name">Full Name</h1>
+      <p>Email: <span id="t2-email"></span> | Phone: <span id="t2-phone"></span></p>
+      <p>Address: <span id="t2-address"></span></p>
+      <section>
+        <h2 class="section-title">Professional Summary</h2>
+        <p id="t2-summary"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Work History</h2>
+        <p id="t2-experience"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Education</h2>
+        <p id="t2-education"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Skills</h2>
+        <p id="t2-skills"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Projects and Awards</h2>
+        <p id="t2-projects"></p>
+      </section>
+    </div>
+  </template>
+
+  <template id="template3">
+    <div class="template-preview template-3">
+      <h1 id="t3-name">Full Name</h1>
+      <p>Email: <span id="t3-email"></span></p>
+      <p>Phone: <span id="t3-phone"></span> | Address: <span id="t3-address"></span></p>
+      <hr style="border-color:#1db954" />
+      <div>
+        <h2 class="section-title">Summary</h2>
+        <p id="t3-summary"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Experience</h2>
+        <p id="t3-experience"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Education</h2>
+        <p id="t3-education"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Skills</h2>
+        <p id="t3-skills"></p>
+      </div>
+      <div>
+        <h2 class="section-title">Projects & Awards</h2>
+        <p id="t3-projects"></p>
+      </div>
+    </div>
+  </template>
+
+  <!-- Repeat similarly for templates 4 to 20 -->
+  <!-- For brevity, I will show just one more example: -->
+
+  <template id="template4">
+    <div class="template-preview template-4">
+      <header>
+        <h1 id="t4-name">Full Name</h1>
+        <p id="t4-email"></p>
+        <p id="t4-phone"></p>
+        <p id="t4-address"></p>
+      </header>
+      <section>
+        <h2 class="section-title">Summary</h2>
+        <p id="t4-summary"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Experience</h2>
+        <p id="t4-experience"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Education</h2>
+        <p id="t4-education"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Skills</h2>
+        <p id="t4-skills"></p>
+      </section>
+      <section>
+        <h2 class="section-title">Projects</h2>
+        <p id="t4-projects"></p>
+      </section>
+    </div>
+  </template>
+
+</div>
+
+<script>
+  // Function to clear current preview area
+  function clearPreviewArea() {
+    const previews = document.querySelectorAll(".template-preview");
+    previews.forEach(el => el.remove());
+  }
+
+  // Render the chosen template and insert data
+  function renderTemplate(templateNum, data) {
+    clearPreviewArea();
+    const template = document.getElementById(`template${templateNum}`);
+    if (!template) return;
+
+    const clone = template.content.cloneNode(true);
+    // Fill data fields in clone
+    clone.querySelectorAll("span[id], p[id], h1[id]").forEach(el => {
+      const key = el.id.replace(`t${templateNum}-`, "");
+      if (data[key]) {
+        el.textContent = data[key];
+      } else {
+        el.textContent = "";
+      }
+    });
+
+    // Append clone to container
+    document.getElementById("template-previews").appendChild(clone);
+
+    // Show only the new preview
+    document.querySelectorAll(".template-preview").forEach(el => el.classList.remove("active"));
+    const activePreview = document.querySelector(`#template-previews .template-preview`);
+    if (activePreview) activePreview.classList.add("active");
+  }
+
+  // On template change, update preview
+  document.querySelectorAll('input[name="template"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      updatePreviewTemplates();
+    });
+  });
+
+  // Update preview templates with form data and selected template
+  function updatePreviewTemplates() {
+    const data = new FormData(form);
+    const formDataObj = {
+      fullName: data.get("fullName") || "",
+      email: data.get("email") || "",
+      phone: data.get("phone") || "",
+      address: data.get("address") || "",
+      summary: data.get("summary") || "",
+      experience: data.get("experience") || "",
+      education: data.get("education") || "",
+      skills: data.get("skills") || "",
+      projects: data.get("projects") || ""
+    };
+
+    const selectedTemplate = data.get("template") || "1";
+    renderTemplate(selectedTemplate, formDataObj);
+  }
+
+  // Initialize preview on load and on input changes
+  window.addEventListener("load", () => {
+    updatePreviewTemplates();
+  });
+  form.addEventListener("input", () => {
+    updatePreviewTemplates();
+  });
+</script>
+<style>
+  /* Template 6 - Professional Navy */
+  .template-6 h1 {
+    color: #001f3f;
+    font-family: 'Arial Black', Gadget, sans-serif;
+  }
+  .template-6 .section-title {
+    border-bottom: 2px solid #001f3f;
+    font-weight: 700;
+  }
+
+  /* Template 7 - Clean Orange */
+  .template-7 h1 {
+    color: #ff6600;
+  }
+  .template-7 .section-title {
+    color: #cc5200;
+    font-weight: bold;
+    border-bottom: 1px dashed #ff6600;
+  }
+
+  /* Template 8 - Soft Purple */
+  .template-8 h1 {
+    color: #800080;
+    font-style: italic;
+  }
+  .template-8 .section-title {
+    color: #4b004b;
+    text-decoration: underline;
+  }
+
+  /* Template 9 - Classic Black */
+  .template-9 h1 {
+    color: #000;
+    font-weight: 900;
+  }
+  .template-9 .section-title {
+    border-bottom: 3px solid #000;
+  }
+
+  /* Template 10 - Sky Blue */
+  .template-10 h1 {
+    color: #00aaff;
+  }
+  .template-10 .section-title {
+    font-weight: 600;
+    border-bottom: 1px solid #0077cc;
+  }
+
+  /* Template 11 - Earth Tones */
+  .template-11 h1 {
+    color: #665544;
+    font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  }
+  .template-11 .section-title {
+    color: #554433;
+    font-weight: 700;
+  }
+
+  /* Template 12 - Bright Yellow */
+  .template-12 h1 {
+    color: #ffcc00;
+    background-color: #333;
+    padding: 5px;
+  }
+  .template-12 .section-title {
+    color: #996600;
+  }
+
+  /* Template 13 - Mint Green */
+  .template-13 h1 {
+    color: #3eb489;
+  }
+  .template-13 .section-title {
+    color: #2a6f5c;
+  }
+
+  /* Template 14 - Elegant Gray Blue */
+  .template-14 h1 {
+    color: #556677;
+  }
+  .template-14 .section-title {
+    border-bottom: 1px solid #8899aa;
+  }
+
+  /* Template 15 - Bold Red */
+  .template-15 h1 {
+    color: #b22222;
+  }
+  .template-15 .section-title {
+    color: #7b1616;
+    font-weight: 700;
+  }
+
+  /* Template 16 - Purple Minimal */
+  .template-16 h1 {
+    color: #6a0dad;
+  }
+  .template-16 .section-title {
+    color: #4a007f;
+  }
+
+  /* Template 17 - Dark Green */
+  .template-17 h1 {
+    color: #004400;
+  }
+  .template-17 .section-title {
+    color: #002200;
+  }
+
+  /* Template 18 - Pink Flair */
+  .template-18 h1 {
+    color: #d6336c;
+  }
+  .template-18 .section-title {
+    color: #a0254a;
+  }
+
+  /* Template 19 - Teal Clean */
+  .template-19 h1 {
+    color: #008080;
+  }
+  .template-19 .section-title {
+    border-bottom: 1px dotted #004040;
+  }
+
+  /* Template 20 - Black & White Classic */
+  .template-20 h1 {
+    color: black;
+  }
+  .template-20 .section-title {
+    border-bottom: 1px solid black;
+  }
+
+  /* Common for all templates */
+  .section-title {
+    margin-top: 20px;
+  }
+
+</style>
+
+<script>
+  // Advanced JS enhancements for dashboard
+
+  // Toggle collapsible sections in preview (example for Template 1)
+  function toggleSection(section) {
+    section.classList.toggle("collapsed");
+  }
+
+  // Save resume data to localStorage for persistence
+  function saveToLocal() {
+    const data = {
+      fullName: form.fullName.value,
+      email: form.email.value,
+      phone: form.phone.value,
+      address: form.address.value,
+      summary: form.summary.value,
+      experience: form.experience.value,
+      education: form.education.value,
+      skills: form.skills.value,
+      projects: form.projects.value,
+      selectedTemplate: document.querySelector('input[name="template"]:checked').value
+    };
+    localStorage.setItem("resumeData", JSON.stringify(data));
+  }
+
+  // Load resume data from localStorage
+  function loadFromLocal() {
+    const dataStr = localStorage.getItem("resumeData");
+    if (!dataStr) return;
+    const data = JSON.parse(dataStr);
+    if (!data) return;
+
+    form.fullName.value = data.fullName || "";
+    form.email.value = data.email || "";
+    form.phone.value = data.phone || "";
+    form.address.value = data.address || "";
+    form.summary.value = data.summary || "";
+    form.experience.value = data.experience || "";
+    form.education.value = data.education || "";
+    form.skills.value = data.skills || "";
+    form.projects.value = data.projects || "";
+
+    if (data.selectedTemplate) {
+      const radio = document.querySelector(`input[name="template"][value="${data.selectedTemplate}"]`);
+      if (radio) radio.checked = true;
+    }
+    updatePreviewTemplates();
+  }
+
+  // Call saveToLocal on input change with debounce
+  let saveTimeout;
+  form.addEventListener("input", () => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      saveToLocal();
+    }, 500);
+  });
+
+  window.addEventListener("load", () => {
+    loadFromLocal();
+  });
+
+  // PDF Export function using html2pdf.js (you need to include html2pdf lib in <head>)
+  async function exportPDF() {
+    const selectedTemplate = document.querySelector('input[name="template"]:checked').value;
+    // Get the currently rendered preview container
+    const preview = document.querySelector("#template-previews .template-preview.active");
+    if (!preview) {
+      alert("No template selected.");
+      return;
+    }
+    // Use html2pdf
+    const opt = {
+      margin:       0.5,
+      filename:     `${form.fullName.value || "resume"}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    await html2pdf().set(opt).from(preview).save();
+  }
+
+  // Bind export button
+  document.getElementById("export-pdf").addEventListener("click", () => {
+    exportPDF();
+  });
+
+</script>
+
+
+
+
+
